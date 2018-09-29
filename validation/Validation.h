@@ -69,6 +69,7 @@ class Validation : public QObject {
 
 public:
     Validation(const int gpus, const int games,
+               const int totalGames,
                const QStringList& gpusList,
                const QString& firstNet,
                const QString& secondNet,
@@ -96,6 +97,8 @@ private:
     Results m_results;
     QVector<ValidationWorker> m_gamesThreads;
     int m_games;
+    int m_totalGames;
+    bool m_sqrtFinished;
     int m_gpus;
     QStringList m_gpusList;
     QString m_firstNet;

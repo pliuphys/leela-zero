@@ -23,7 +23,8 @@
 
 using VersionTuple = std::tuple<int, int, int>;
 // Minimal Leela Zero version we expect to see
-const VersionTuple min_leelaz_version{0, 10, 0};
+//const VersionTuple min_leelaz_version{0, 10, 0};
+const VersionTuple min_leelaz_version{0, 9, 0};
 
 
 void ValidationWorker::run() {
@@ -134,6 +135,7 @@ void ValidationWorker::init(const QString& gpuIndex,
 
 Validation::Validation(const int gpus,
                        const int games,
+                       const int totalGames,
                        const QStringList& gpuslist,
                        const QString& firstNet,
                        const QString& secondNet,
@@ -150,6 +152,8 @@ Validation::Validation(const int gpus,
     m_syncMutex(),
     m_gamesThreads(gpus*games),
     m_games(games),
+    m_totalGames(totalGames),
+    m_sqrtFinished(false),
     m_gpus(gpus),
     m_gpusList(gpuslist),
     m_firstNet(firstNet),
@@ -264,8 +268,10 @@ void Validation::getResult(Sprt::GameResult result, int net_one_color) {
     auto wdl = m_statistic.getWDL();
     QTextStream(stdout) << std::get<0>(wdl) << " wins, "
                         << std::get<2>(wdl) << " losses" << endl;
-    if (status.result != Sprt::Continue) {
-        quitThreads();
+    if ( (!m_sqrtFinished) && (status.result != Sprt::Continue)) {
+        m_sqrtFinished=true;
+        if(m_totalGames==0)
+            quitThreads();
         QTextStream(stdout)
             << "The first net is "
             <<  ((status.result ==  Sprt::AcceptH0) ? "worse " : "better ")
@@ -274,6 +280,14 @@ void Validation::getResult(Sprt::GameResult result, int net_one_color) {
         //sendQuit();
     } else {
         printSprtStatus(status);
+    }
+
+    if(m_totalGames){
+        if(std::get<0>(wdl)+std::get<2>(wdl)>=m_totalGames){
+            QTextStream(stdout) << "Total games goal reached." << endl;
+            m_results.printResults(m_firstNet, m_secondNet);
+            quitThreads();
+        }
     }
     m_syncMutex.unlock();
 }

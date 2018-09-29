@@ -71,6 +71,11 @@ int main(int argc, char *argv[]) {
             "Save SGF files after each self-play game.",
             "output directory");
 
+    QCommandLineOption totalGamesOption(
+        "totalGames",
+            "Total games to be played. Disables SPRT termination trigger.",
+            "num");
+
     parser.addOption(gamesNumOption);
     parser.addOption(gpusOption);
     parser.addOption(networkOption);
@@ -78,6 +83,8 @@ int main(int argc, char *argv[]) {
     parser.addOption(optionsOption);
     parser.addOption(sprtOption);
     parser.addOption(keepSgfOption);
+
+    parser.addOption(totalGamesOption);
 
     // Process the actual command line arguments given by the user
     parser.process(app);
@@ -108,6 +115,10 @@ int main(int argc, char *argv[]) {
         gpusNum = 1;
     }
 
+    int totalGames = parser.value(totalGamesOption).toInt();
+    if(totalGames<0)
+        totalGames=0;
+
     QTextStream(stdout) << "validation v" << VALIDATION_VERSION << endl;
     if (parser.isSet(keepSgfOption)) {
         if (!QDir().mkpath(parser.value(keepSgfOption))) {
@@ -120,7 +131,7 @@ int main(int argc, char *argv[]) {
     QTextStream(stdout) << "SPRT : " << sprtOpt << " h0 " << h0 << " h1 " << h1 << endl;
 
     Console *cons = nullptr;
-    Validation *validate = new Validation(gpusNum, gamesNum, gpusList,
+    Validation *validate = new Validation(gpusNum, gamesNum, totalGames, gpusList,
                         netList.at(0), netList.at(1),
                         parser.value(keepSgfOption), &mutex,
                         binList.at(0), binList.at(1),
